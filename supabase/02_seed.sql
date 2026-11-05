@@ -33,7 +33,7 @@ on conflict (code) do nothing;
 -- Evergreen library. Autopilot pulls from here, least recently used first.
 insert into public.templates (title, flavor, kind, platform, steps, sort)
 select * from (values
-  ('Invite one person who isn’t into politics', 'Not your most political friend. Your most fun one.', 'recruit', 'chat', array['invite'], 10),
+  ('Invite one person who doesn’t follow politics', 'Not your most political friend. Your most fun one.', 'recruit', 'chat', array['invite'], 10),
   ('Follow train: follow five people in your guild', 'More of us following each other means more of us seen.', 'amplify', 'instagram', array['open'], 20),
   ('Boost the week’s three picks', 'Watch, like, save, share. Three posts, ten minutes.', 'amplify', 'facebook', array['open','watch','like','save','share'], 30),
   ('Share this week’s explainer in a group chat', 'Pick a chat that isn’t already on our side.', 'bubble', 'chat', array['sendchat'], 40),
