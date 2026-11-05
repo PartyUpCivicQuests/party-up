@@ -1,9 +1,9 @@
 # Reading the Reports tab
 
-Reports answer two questions: **which quests land**, and **what to do next**. All numbers are anonymous totals.
+Reports answer two questions: **which quests are successful**, and **what to do next**. All numbers are anonymous totals.
 
 ## The core number: finish rate
-Finishes divided by the members who could see the quest (everyone in its guild, or the guilds under it, who had joined by the time it closed). Opens are counted too, but they overcount a little, so finish rate is the one to trust.
+Finishes divided by the members who could see the quest (everyone in its guild, or the guilds under it, who had joined by the time it closed). Opens are counted too, but they overcount a little, so finish rate is more reliable.
 
 Quests seen by fewer than 10 members are marked "small sample" and left out of comparisons.
 
