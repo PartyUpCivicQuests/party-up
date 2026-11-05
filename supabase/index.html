@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Party Up</title>
+<meta name="description" content="Civic quests that take a few minutes. Real people, real accounts, no bots.">
+<meta name="theme-color" content="#1C2452">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Alegreya+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="top" id="top"></header>
+<div class="banner" id="banner" hidden></div>
+<main id="app" tabindex="-1"><p class="note" style="margin-top:24px">Loading…</p></main>
+
+<div id="roll" class="roll" hidden role="dialog" aria-modal="true" aria-labelledby="roll-xp">
+  <div class="roll-in">
+    <svg class="d20" id="d20" viewBox="0 0 100 100" aria-hidden="true">
+      <polygon class="outer" points="50,4 90,27 90,73 50,96 10,73 10,27"/>
+      <polygon class="face" points="50,22 78,68 22,68"/>
+      <path class="edges" d="M50 4L50 22M90 27L50 22M90 27L78 68M90 73L78 68M50 96L78 68M50 96L22 68M10 73L22 68M10 27L22 68M10 27L50 22"/>
+      <text x="50" y="60" id="roll-n">20</text>
+    </svg>
+    <p class="roll-xp" id="roll-xp"></p>
+    <p class="roll-sub" id="roll-sub"></p>
+    <p class="roll-bonus" id="roll-bonus"></p>
+    <button class="btn primary" type="button" data-act="closeroll" id="roll-close">Back to quests</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">Party Up needs JavaScript turned on.</p></noscript>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
