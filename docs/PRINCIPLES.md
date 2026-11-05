@@ -20,14 +20,15 @@ Party Up adapts the *Mini-Manual of Informational Insurgency* for US organizing 
 - No realistic AI-generated images or video of real people. Minnesota and several other states restrict election deepfakes, and authentic phone footage performs better anyway.
 
 ## Privacy
-- Members join with an invite code and a name. Email is optional and used only for sign-in links.
+- Members join with an invite code and a name. Email is optional and used only for sign-in links and cross-platform access to your account.
+- If you choose not to use an email, your character info is held only in your browser data.
 - No contact-book uploads. Members invite people with a personal link or QR code.
 - The record of who finished which quest is deleted a day after each quest closes. Reports use anonymous totals only, and there's no per-person drill-down.
 
 ## Sustainable pace
 - Weekly streaks, not daily. Streak shields cover a missed week.
 - Each member sets the most quests they want per week. The schedule shows organizers when a week is getting crowded.
-- Evergreen quests carry quiet weeks so organizers can rest. Autopilot fills the board from the library but never fires a timed wave on its own.
+- Evergreen quests are used to fill quiet weeks so organizers can rest. Autopilot fills the board from the library but never fires a timed wave on its own.
 - Timed waves get a freshness check, so stale quests are held instead of sent.
 
 *None of this is legal advice. Talk to an election lawyer before a public launch.*
