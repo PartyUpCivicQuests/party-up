@@ -139,7 +139,7 @@ export function viewCompose(S) {
     <div class="f"><span class="f-lbl">Guildmaster’s voice note <span class="opt">about 20 seconds, 30 at most</span></span>
       <div id="rec" class="rec">${recHtml(S)}</div>
       <label class="upl">Or upload a recording <input type="file" id="voice-file" accept="audio/*"></label></div>
-    <label class="f">Transcript <span class="opt">members can read it instead, and it’s read aloud if there’s no recording</span><textarea name="note" rows="3">${esc(d.note)}</textarea></label>
+    <label class="f">Transcript <span class="opt">with no recording, the Cheery Bard babbles it while the words type out. Members can also have it read aloud.</span><textarea name="note" rows="3">${esc(d.note)}</textarea></label>
     <div style="margin-top:8px"><button type="button" class="btn ghost sm" data-act="previewvoice">${icon('play')}Hear the note</button></div>
     <label class="f">Source link <span class="req">required</span><input name="source" type="url" inputmode="url" placeholder="https://" value="${esc(d.source)}"></label>
     <p class="hint">Every quest carries its source. Quests are archived, never deleted. Fix mistakes with a visible correction.</p>

@@ -34,11 +34,18 @@ export function questBody(q, ctx, opts = {}) {
   const flavor = qtx(q, 'flavor');
   if (flavor) h += `<p class="q-flavor">${esc(flavor)}</p>`;
   if (q.correction) h += `<p class="corr"><b>${esc(t('correction'))}:</b> ${esc(q.correction)}</p>`;
+  // Voice: the main button plays the recording, or the Cheery Bard babble when
+  // there's only a transcript. "Read transcript aloud" uses the device's best
+  // real voice in the member's language.
   const note = qtx(q, 'note');
   if (note || q.note_audio) {
-    const speaking = ctx.speaking === q.id;
-    h += `<div class="voice"><button type="button" class="btn ghost sm" data-act="voice"${data}>${icon(speaking ? 'stop' : 'play')}<span>${esc(t(speaking ? 'stop' : 'play'))}</span></button>` +
-      (note ? `<details class="transcript"><summary>${esc(t('readIt'))}</summary><p>${esc(note)}</p></details>` : '') + '</div>';
+    const speaking = ctx.speaking === q.id, reading = ctx.reading === q.id;
+    const mainLabel = speaking ? t('stop') : (q.note_audio ? t('play') : t('hearBard'));
+    h += `<div class="voice"><button type="button" class="btn ghost sm" data-act="voice"${data}>${icon(speaking ? 'stop' : 'play')}<span>${esc(mainLabel)}</span></button>`;
+    if (note) h += `<button type="button" class="btn ghost sm" data-act="readaloud"${data}>${icon(reading ? 'stop' : 'volume')}<span>${esc(t(reading ? 'stopReading' : 'readAloud'))}</span></button>`;
+    h += '</div>';
+    if (ctx.bubble && ctx.bubble.id === q.id) h += `<div class="bubble" data-bubble="${esc(q.id)}" aria-live="polite">${esc(ctx.bubble.text)}</div>`;
+    if (note) h += `<details class="transcript"><summary>${esc(t('readIt'))}</summary><p>${esc(note)}</p></details>`;
   }
   const steps = (q.steps || []).map((key, i) => {
     const ok = ticked.includes(i), label = esc(stepLabel(q, key)), di = ctx.inert ? '' : `${data} data-i="${i}"`;

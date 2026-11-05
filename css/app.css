@@ -379,3 +379,8 @@ fieldset.box.nudge .f input{background:var(--card)}
 .upl{display:block;margin-top:8px;font-weight:600;font-size:.92rem;color:var(--ink-2)}
 .upl input{display:block;margin-top:4px;font-size:.9rem}
 @media (prefers-reduced-motion: reduce){.rec-dot{animation:none}}
+
+/* Cheery Bard speech bubble */
+.bubble{position:relative;margin:2px 0 12px;padding:10px 14px;border:2px solid var(--line);border-radius:14px;background:var(--card);font-family:"Alegreya",Georgia,serif;font-size:1.08rem;line-height:1.45;min-height:2.9em}
+.bubble::before{content:"";position:absolute;top:-9px;left:22px;width:14px;height:14px;background:var(--card);border-left:2px solid var(--line);border-top:2px solid var(--line);transform:rotate(45deg)}
+.voice .btn{flex:none}

@@ -47,7 +47,7 @@ Free Supabase projects pause after about a week with no activity. With members u
 
 ### Recording voice notes
 
-In **New quest**, tap **Record** under the Guildmaster's voice note, allow the microphone, and talk for up to 30 seconds. You can also upload a file. Add a short transcript too: members can read it instead, and it's read aloud as a backup if a phone can't play the recording. Chrome, Edge, and Safari record in a format every phone plays; Firefox's recordings may not play on some older iPhones.
+In **New quest**, tap **Record** under the Guildmaster's voice note, allow the microphone, and talk for up to 30 seconds. You can also upload a file. Add a short transcript too. With no recording, the Cheery Bard (an original babble voice, like a game character chattering) "speaks" the transcript while the words type out. Every quest with a transcript also gets a **Read transcript aloud** button that uses the best voice on the member's device, in Spanish when you've written a Spanish version. Chrome, Edge, and Safari record in a format every phone plays; Firefox's recordings may not play on some older iPhones.
 
 ## 5. Post quests to Discord
 

@@ -10,7 +10,7 @@ export function inviteLink(S) {
 }
 
 function ctx(S) {
-  return { done: S.done, ticked: S.ticked, speaking: S.speaking, guildName: () => '' };
+  return { done: S.done, ticked: S.ticked, speaking: S.speaking, reading: S.reading, bubble: S.bubble, guildName: () => '' };
 }
 
 export function viewJoin(S) {

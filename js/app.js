@@ -6,13 +6,14 @@ import { t, tx, qtx, setLang, getLang } from './i18n.js';
 import { viewJoin, viewQuests, viewParty, viewSheet, inviteLink, snoozeNudge } from './views-member.js';
 import { viewSchedule, viewCompose, viewLibrary, viewCrew, blankDraft, draftFromQuest, draftFromTemplate, readDraft, questRowFromDraft, validateDraft, renderPreview, recHtml } from './views-gm.js';
 import { viewReports, reportCsv } from './reports.js';
+import { babble } from './babble.js';
 
 const MEMBER = ['quests', 'party', 'sheet'];
 const GM = ['gm-schedule', 'gm-new', 'gm-library', 'gm-reports', 'gm-crew'];
 const TICKS = 'partyup-ticks';
 
 const S = {
-  api: null, me: null, account: null, quests: [], done: {}, ticked: {}, open: {}, speaking: null,
+  api: null, me: null, account: null, quests: [], done: {}, ticked: {}, open: {}, speaking: null, reading: null, bubble: null,
   buddy: null, board: [], turnout: [], loaded: {}, busy: false,
   gm: { week0: null, quests: [], templates: [], archive: [], guilds: [], settings: null, crew: [], invites: [], report: null, range: 84, draft: null, editing: null }
 };
@@ -90,7 +91,7 @@ let lastRoute = null;
 async function go() {
   let r = route();
   if (r !== 'gm-new' && recorder) recStop();
-  stopNote(); S.speaking = null;
+  stopNote(); S.bubble = null;
   if (r.startsWith('gm-') && !isStaff()) { location.hash = 'quests'; return; }
   if (!S.me) { paint(); return; }
   if (!S.loaded[r]) { header(r); $('app').className = r.startsWith('gm-') ? 'wide' : ''; $('app').innerHTML = `<p class="note" style="margin-top:24px">${esc(t('loading'))}</p>`; }
@@ -138,34 +139,71 @@ async function complete(id, fn) {
   } catch (e) { toast(e.message); } finally { S.busy = false; }
 }
 // ---------- voice notes ----------
-let player = null;
+// Main button: the organizer's recording if there is one, otherwise the Cheery
+// Bard babble with the words typing out. "Read transcript aloud": the device's
+// best real voice, in the member's language when there's a translation.
+let player = null, bard = null;
 function stopNote() {
   if (player) { player.onended = player.onerror = null; player.pause(); player = null; }
+  if (bard) { bard.stop(); bard = null; }
   if ('speechSynthesis' in window) speechSynthesis.cancel();
+  S.speaking = null; S.reading = null;
 }
-function speakText(id, text, lang) {
-  if (!text || !('speechSynthesis' in window)) { toast(t('readIt')); S.speaking = null; paint(); return; }
-  const u = new SpeechSynthesisUtterance(text); u.lang = lang || (getLang() === 'es' ? 'es-US' : 'en-US');
-  u.onend = u.onerror = () => { if (S.speaking === id) { S.speaking = null; paint(); } };
-  S.speaking = id; paint(); speechSynthesis.speak(u);
+const GOOD_VOICE = /natural|neural|online|google|premium|enhanced|siri/i;
+function pickVoice(lang) {
+  if (!('speechSynthesis' in window)) return null;
+  const all = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith(lang));
+  const us = all.filter(v => /-us$/i.test(v.lang));
+  return us.find(v => GOOD_VOICE.test(v.name)) || all.find(v => GOOD_VOICE.test(v.name)) || us.find(v => v.default) || us[0] || all[0] || null;
 }
-// Plays the organizer's recording. Members reading in another language hear
-// the translated transcript instead, when the quest has one.
-function playNote(q) {
-  const was = S.speaking === q.id;
-  stopNote(); S.speaking = null;
+if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); }
+function readAloud(q) {
+  const was = S.reading === q.id;
+  stopNote();
   if (was) { paint(); return; }
   const lang = getLang();
   const translated = lang !== 'en' && q.tr && q.tr[lang] && q.tr[lang].note;
-  if (q.note_audio && !translated) {
+  const text = translated || q.note || '';
+  const voiceLang = translated ? lang : 'en';
+  if (!text || !('speechSynthesis' in window)) { toast(t('readIt')); paint(); return; }
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = voiceLang === 'es' ? 'es-US' : 'en-US';
+  const v = pickVoice(voiceLang); if (v) u.voice = v;
+  u.onend = u.onerror = () => { if (S.reading === q.id) { S.reading = null; paint(); } };
+  S.reading = q.id; paint(); speechSynthesis.speak(u);
+}
+function startBard(q) {
+  const text = qtx(q, 'note');
+  if (!text) { paint(); return; }
+  S.speaking = q.id; S.bubble = { id: q.id, text: '' };
+  paint();
+  bard = babble(text, {
+    onChar: ch => {
+      S.bubble.text += ch;
+      const el = document.querySelector(`[data-bubble="${CSS.escape(q.id)}"]`);
+      if (el) el.textContent = S.bubble.text;
+    },
+    onEnd: () => { bard = null; if (S.speaking === q.id) { S.speaking = null; paint(); } }
+  });
+}
+function playNote(q) {
+  const was = S.speaking === q.id;
+  stopNote();
+  if (was) { paint(); return; }
+  S.bubble = null;
+  if (q.note_audio) {
     player = new Audio(q.note_audio);
     S.speaking = q.id;
     player.onended = () => { player = null; if (S.speaking === q.id) { S.speaking = null; paint(); } };
-    player.onerror = () => { player = null; if (qtx(q, 'note')) speakText(q.id, qtx(q, 'note')); else { S.speaking = null; paint(); toast('This recording won’t play on this device.'); } };
+    player.onerror = () => {
+      player = null; S.speaking = null;
+      if (qtx(q, 'note')) { toast('This recording won’t play on this device, so the bard will read it.'); startBard(q); }
+      else { paint(); toast('This recording won’t play on this device.'); }
+    };
     player.play().catch(() => { if (player && player.onerror) player.onerror(); });
     paint(); return;
   }
-  speakText(q.id, qtx(q, 'note'));
+  startBard(q);
 }
 let recorder = null, recTimer = null;
 function pickAudioType() {
@@ -253,6 +291,7 @@ document.addEventListener('click', async e => {
     case 'later': snoozeNudge(); paint(); break;
     case 'copy': if (q) copyText(qtx(q, 'caption'), t('copied')); break;
     case 'voice': if (q) playNote(q); break;
+    case 'readaloud': if (q) readAloud(q); break;
     case 'recstart': recStart(); break;
     case 'recstop': recStop(); break;
     case 'recremove': if (S.gm.rec && S.gm.rec.url) URL.revokeObjectURL(S.gm.rec.url); S.gm.rec = null; if (S.gm.draft) S.gm.draft.note_audio = null; drawRec(); renderPreview(S); break;
@@ -275,8 +314,10 @@ document.addEventListener('click', async e => {
     case 'previewvoice': {
       const src = (S.gm.rec && S.gm.rec.url) || (S.gm.draft && S.gm.draft.note_audio);
       const n = String(new FormData($('compose')).get('note') || '');
-      playNote({ id: 'preview', note: n, note_audio: src || null, tr: {} });
-      if (!src && !n) toast('Record a note or write a transcript first.');
+      stopNote();
+      if (src) { player = new Audio(src); player.play().catch(() => toast('This recording won’t play here.')); }
+      else if (n) bard = babble(n, { onEnd: () => { bard = null; } });
+      else toast('Record a note or write a transcript first.');
       break;
     }
     case 'copymirror': { const d = S.gm.draft || {}; copyText(`New quest: ${d.title || 'Untitled'}${d.flavor ? '\n' + d.flavor : ''}\n${location.origin + location.pathname}`, 'Copied.'); break; }
