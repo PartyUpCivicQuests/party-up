@@ -4,6 +4,6 @@
 // Leave them blank to run in demo mode with sample data stored on this device.
 
 export const CONFIG = {
-  SUPABASE_URL: 'https://supabase.com/dashboard/project/gfslxpbgzbndmgtzoksl/',   // like https://abcdefgh.supabase.co
+  SUPABASE_URL: 'https://gfslxpbgzbndmgtzoksl.supabase.co',   // like https://abcdefgh.supabase.co
   SUPABASE_KEY: 'sb_publishable_eWMSDICUgXepFNpdCZPdIw_w6YEBu__'    // starts with sb_publishable_ (or the older anon key)
 };
