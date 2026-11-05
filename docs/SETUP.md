@@ -17,7 +17,7 @@ You'll create three accounts if you don't have them: **GitHub** (hosts the app),
 
 1. Sign in at supabase.com and create a **New project**. Pick a strong database password and save it somewhere safe. Choose a US region.
 2. When it's ready, open **SQL Editor > New query**. Open `supabase/01_schema.sql` from the repo, copy all of it, paste it in, and click **Run**. You should see "Success."
-3. Do the same with `supabase/02_seed.sql`, then `supabase/03_jobs.sql`.
+3. Do the same with `supabase/02_seed.sql`, then `supabase/03_jobs.sql`, then `supabase/04_voice_notes.sql` (storage for the Guildmaster's recorded voice notes).
 4. Turn on sign-ins: **Authentication > Sign In / Providers**. Turn on **Allow anonymous sign-ins** (so members can join with just an invite code), and make sure **Email** is on (so they can add an email to use other devices).
 5. Tell Supabase where the app lives: **Authentication > URL Configuration**. Set **Site URL** to your GitHub Pages address from step 1, and add the same address under **Redirect URLs**.
 
@@ -33,6 +33,8 @@ Free Supabase projects pause after about a week with no activity. With members u
    ```
    Click **Commit changes**. Pages redeploys in a minute or two.
 
+**Updating later:** when you get new versions of Party Up's files, never replace `js/config.js`. It's the one file that holds your settings, and a fresh copy is blank, which quietly switches the whole site back to demo mode.
+
 ## 4. Make yourself the Guildmaster
 
 1. Open `https://YOUR-GITHUB-NAME.github.io/party-up/?invite=FOUNDER`. Pick your name on the board and join.
@@ -42,6 +44,10 @@ Free Supabase projects pause after about a week with no activity. With members u
    update public.app_settings set app_url = 'https://YOUR-GITHUB-NAME.github.io/party-up/' where id = 1;
    ```
 3. Reload the app. A **Guildmaster** switch appears at the top. Under **Crew**, you can add your Discord invite link, make new invite codes, and promote captains from now on, without SQL.
+
+### Recording voice notes
+
+In **New quest**, tap **Record** under the Guildmaster's voice note, allow the microphone, and talk for up to 30 seconds. You can also upload a file. Add a short transcript too: members can read it instead, and it's read aloud as a backup if a phone can't play the recording. Chrome, Edge, and Safari record in a format every phone plays; Firefox's recordings may not play on some older iPhones.
 
 ## 5. Post quests to Discord
 

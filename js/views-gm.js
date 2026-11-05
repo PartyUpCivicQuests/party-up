@@ -79,17 +79,32 @@ export function viewSchedule(S) {
 }
 
 // ---------- Composer ----------
+// Voice recorder state lives in S.gm.rec: null, { status: 'recording' }, or { status: 'ready', blob, url }.
+export function recHtml(S) {
+  const r = S.gm.rec, saved = S.gm.draft && S.gm.draft.note_audio;
+  const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  if (r && r.status === 'recording') {
+    return `<div class="btn-row rec-row"><button type="button" class="btn warn" data-act="recstop">${icon('stop')}Stop</button><span class="rec-live"><span class="rec-dot" aria-hidden="true"></span>Recording <span id="rec-time">0:00</span> of 0:30</span></div>`;
+  }
+  const src = (r && r.url) || saved;
+  if (src) {
+    return `<audio controls preload="metadata" src="${esc(src)}"></audio><div class="btn-row rec-row">${canRecord ? `<button type="button" class="btn ghost sm" data-act="recstart">${icon('mic')}Record again</button>` : ''}<button type="button" class="btn ghost sm warn" data-act="recremove">Remove</button></div>${r && r.blob ? '<p class="hint">Not saved yet. It uploads when you save the quest.</p>' : ''}`;
+  }
+  return canRecord
+    ? `<div class="btn-row rec-row"><button type="button" class="btn ghost" data-act="recstart">${icon('mic')}Record</button></div><p class="hint">Your browser will ask to use the microphone. Recording stops by itself at 30 seconds.</p>`
+    : '<p class="hint">This browser can’t record. Upload a file instead.</p>';
+}
 export function blankDraft(S) {
   const when = atLocal(1, 18);
   const mn = S.gm.guilds.find(g => g.name === 'Minnesota') || S.gm.guilds[0] || {};
   return { title: '', flavor: '', kind: 'amplify', shelf: 'dated', platform: 'instagram', link: '', steps: ['open', 'watch', 'like', 'save', 'share'],
-    caption: '', note: '', source: '', claim: false, when: toLocalInput(when), length: '60', stale: toLocalInput(when + DAY), guild_id: mn.id || '',
+    caption: '', note: '', note_audio: null, source: '', claim: false, when: toLocalInput(when), length: '60', stale: toLocalInput(when + DAY), guild_id: mn.id || '',
     es_title: '', es_flavor: '', es_caption: '', es_note: '', to_library: false, template_id: null };
 }
 export function draftFromQuest(S, q) {
   const d = blankDraft(S), es = (q.tr && q.tr.es) || {};
   return Object.assign(d, { title: q.title, flavor: q.flavor || '', kind: q.kind, shelf: q.shelf, platform: q.platform, link: q.link || '',
-    steps: (q.steps || []).slice(), caption: q.caption || '', note: q.note || '', source: q.source || '', claim: !!q.claim,
+    steps: (q.steps || []).slice(), caption: q.caption || '', note: q.note || '', note_audio: q.note_audio || null, source: q.source || '', claim: !!q.claim,
     when: toLocalInput(q.starts_at ? ts(q.starts_at) : atLocal(1, 18)),
     length: String(q.starts_at && q.ends_at ? Math.round((ts(q.ends_at) - ts(q.starts_at)) / 6e4) : 60),
     stale: toLocalInput(q.stale_at ? ts(q.stale_at) : (q.starts_at ? ts(q.starts_at) : atLocal(1, 18)) + DAY),
@@ -98,7 +113,7 @@ export function draftFromQuest(S, q) {
 }
 export function draftFromTemplate(S, tp) {
   return Object.assign(blankDraft(S), { title: tp.title, flavor: tp.flavor || '', kind: tp.kind, shelf: 'evergreen', platform: tp.platform,
-    steps: (tp.steps || []).slice(), caption: tp.caption || '', note: tp.note || '', link: tp.link || '', source: tp.source || '', template_id: tp.id });
+    steps: (tp.steps || []).slice(), caption: tp.caption || '', note: tp.note || '', note_audio: tp.note_audio || null, link: tp.link || '', source: tp.source || '', template_id: tp.id });
 }
 const sel = (name, opts, val) => `<select name="${name}">${opts.map(([v, l]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 const SHELF_HINT = { evergreen: 'Stays on the board all week. Posted to Discord once, no timer.', dated: 'Tied to a calendar moment. Needs a freshness check unless it starts within two days.', rapid: 'Same-day response. Short wave, expires fast.' };
@@ -121,7 +136,10 @@ export function viewCompose(S) {
     <label class="f">Caption to copy <span class="opt">optional</span><textarea name="caption" rows="3">${esc(d.caption)}</textarea></label>
   </fieldset>
   <fieldset class="box"><legend>Voice and sourcing</legend>
-    <label class="f">Guildmaster’s note <span class="opt">read aloud, about 20 seconds</span><textarea name="note" rows="3">${esc(d.note)}</textarea></label>
+    <div class="f"><span class="f-lbl">Guildmaster’s voice note <span class="opt">about 20 seconds, 30 at most</span></span>
+      <div id="rec" class="rec">${recHtml(S)}</div>
+      <label class="upl">Or upload a recording <input type="file" id="voice-file" accept="audio/*"></label></div>
+    <label class="f">Transcript <span class="opt">members can read it instead, and it’s read aloud if there’s no recording</span><textarea name="note" rows="3">${esc(d.note)}</textarea></label>
     <div style="margin-top:8px"><button type="button" class="btn ghost sm" data-act="previewvoice">${icon('play')}Hear the note</button></div>
     <label class="f">Source link <span class="req">required</span><input name="source" type="url" inputmode="url" placeholder="https://" value="${esc(d.source)}"></label>
     <p class="hint">Every quest carries its source. Quests are archived, never deleted. Fix mistakes with a visible correction.</p>
@@ -188,7 +206,7 @@ export function renderPreview(S) {
   const form = document.getElementById('compose'); if (!form) return;
   const d = S.gm.draft = Object.assign(S.gm.draft || {}, readDraft(form));
   const k = KINDS[d.kind] || KINDS.amplify;
-  const q = Object.assign(questRowFromDraft(d, S.gm.week0), { id: 'preview', cls: k.cls, xp: k.xp });
+  const q = Object.assign(questRowFromDraft(d, S.gm.week0), { id: 'preview', cls: k.cls, xp: k.xp, note_audio: (S.gm.rec && S.gm.rec.url) || d.note_audio || null });
   if (q.shelf !== 'evergreen') { q.starts_at = new Date(Date.now() - 6e4).toISOString(); q.ends_at = new Date(Date.now() + 36e5).toISOString(); }
   document.getElementById('pv-member').innerHTML = questBody(q, { done: {}, ticked: {}, inert: true, guildName: id => (S.gm.guilds.find(g => g.id === id) || {}).name || '' }, { title: true });
   const wave = q.shelf === 'evergreen' ? 'Open all week' : (d.length === '1440' ? 'Ends in 24 hours' : d.length === '180' ? 'Ends in 3 hours' : 'Ends in 1 hour');

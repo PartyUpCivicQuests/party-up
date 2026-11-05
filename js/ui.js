@@ -35,10 +35,10 @@ export function questBody(q, ctx, opts = {}) {
   if (flavor) h += `<p class="q-flavor">${esc(flavor)}</p>`;
   if (q.correction) h += `<p class="corr"><b>${esc(t('correction'))}:</b> ${esc(q.correction)}</p>`;
   const note = qtx(q, 'note');
-  if (note) {
+  if (note || q.note_audio) {
     const speaking = ctx.speaking === q.id;
     h += `<div class="voice"><button type="button" class="btn ghost sm" data-act="voice"${data}>${icon(speaking ? 'stop' : 'play')}<span>${esc(t(speaking ? 'stop' : 'play'))}</span></button>` +
-      `<details class="transcript"><summary>${esc(t('readIt'))}</summary><p>${esc(note)}</p></details></div>`;
+      (note ? `<details class="transcript"><summary>${esc(t('readIt'))}</summary><p>${esc(note)}</p></details>` : '') + '</div>';
   }
   const steps = (q.steps || []).map((key, i) => {
     const ok = ticked.includes(i), label = esc(stepLabel(q, key)), di = ctx.inert ? '' : `${data} data-i="${i}"`;

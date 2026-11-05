@@ -141,10 +141,10 @@ begin
      order by (select max(q2.week_of) from public.quests q2 where q2.template_id = t.id) asc nulls first, t.sort
   loop
     exit when v_have + v_added >= v_s.min_per_week;
-    insert into public.quests (title, flavor, kind, shelf, platform, link, steps, caption, note, source,
+    insert into public.quests (title, flavor, kind, shelf, platform, link, steps, caption, note, note_audio, source,
                                guild_id, week_of, confirmed, template_id)
     values (v_t.title, v_t.flavor, v_t.kind, 'evergreen', v_t.platform, v_t.link, v_t.steps, v_t.caption,
-            v_t.note, v_t.source, v_nat, v_cur, true, v_t.id);
+            v_t.note, v_t.note_audio, v_t.source, v_nat, v_cur, true, v_t.id);
     v_added := v_added + 1;
   end loop;
   return v_added;

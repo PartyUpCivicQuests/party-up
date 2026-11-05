@@ -72,6 +72,14 @@ export function createApi(cfg) {
     saveQuest: row => run(sb.from('quests').insert(row).select().single()),
     updateQuest: (id, patch) => run(sb.from('quests').update(patch).eq('id', id).select().single()),
     secondCall: id => rpc('request_second_call', { p_quest: id }),
+    async uploadVoice(blob) {
+      const type = (blob.type || 'audio/webm').split(';')[0];
+      const ext = { 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/mpeg': 'mp3', 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/wav': 'wav', 'audio/x-wav': 'wav' }[type] || 'audio';
+      const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await sb.storage.from('voice-notes').upload(path, blob, { contentType: type, upsert: false });
+      if (error) throw new Error(`Couldn’t upload the voice note: ${error.message}`);
+      return sb.storage.from('voice-notes').getPublicUrl(path).data.publicUrl;
+    },
     templates: () => run(sb.from('templates').select('*').order('sort')),
     saveTemplate: row => run(sb.from('templates').insert(row).select().single()),
     updateTemplate: (id, patch) => run(sb.from('templates').update(patch).eq('id', id).select().single()),

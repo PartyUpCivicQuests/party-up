@@ -244,6 +244,9 @@ export function createApi() {
       if (patch.kind) Object.assign(q, { cls: KINDS[patch.kind].cls, xp: KINDS[patch.kind].xp });
       save(); return wait(q);
     },
+    uploadVoice(blob) {
+      return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('Couldn’t read the recording.')); r.readAsDataURL(blob); });
+    },
     secondCall(id) { const q = db.quests.find(x => x.id === id); if (q) { q.second_call_requested = true; q.second_call_at = iso(now()); } save(); return wait(null); },
     templates: () => wait(db.templates.slice().sort((a, b) => a.sort - b.sort)),
     saveTemplate(row) { const t = Object.assign({ id: newId('t'), sort: 100, active: true }, row); db.templates.push(t); save(); return wait(t); },

@@ -368,3 +368,14 @@ select[name="role"]{display:block;width:100%;margin-top:8px;padding:10px 12px;bo
 fieldset.box.nudge{border-color:var(--gold);border-width:3px;background:var(--gold-soft)}
 fieldset.box.nudge>legend{background:var(--gold);color:var(--gold-ink);border:2px solid var(--line);border-radius:999px;padding:2px 12px}
 fieldset.box.nudge .f input{background:var(--card)}
+
+/* Voice note recorder */
+.rec{margin-top:6px}
+.rec audio{width:100%;max-width:420px;display:block;margin:4px 0 8px}
+.rec-row{align-items:center}
+.rec-live{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-variant-numeric:tabular-nums}
+.rec-dot{width:12px;height:12px;border-radius:50%;background:var(--ember);animation:recpulse 1s ease-in-out infinite}
+@keyframes recpulse{50%{opacity:.25}}
+.upl{display:block;margin-top:8px;font-weight:600;font-size:.92rem;color:var(--ink-2)}
+.upl input{display:block;margin-top:4px;font-size:.9rem}
+@media (prefers-reduced-motion: reduce){.rec-dot{animation:none}}

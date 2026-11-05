@@ -67,6 +67,7 @@ create table if not exists public.templates (
   steps      text[] not null default '{}',
   caption    text,
   note       text,
+  note_audio text,
   link       text,
   source     text,
   sort       int not null default 100,
@@ -87,6 +88,7 @@ create table if not exists public.quests (
   steps                 text[] not null default '{}',
   caption               text,
   note                  text,
+  note_audio            text,                                   -- public URL of the organizer's recording
   source                text check (source is null or source ~* '^https?://'),
   tr                    jsonb not null default '{}'::jsonb,   -- {"es": {"title": "...", "flavor": "...", "caption": "...", "note": "..."}}
   claim                 boolean not null default false,

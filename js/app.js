@@ -4,7 +4,7 @@ import { esc, icon, D20, fmtLeft, safeUrl, downloadText, ymd } from './util.js';
 import { CLASSES } from './content.js';
 import { t, tx, qtx, setLang, getLang } from './i18n.js';
 import { viewJoin, viewQuests, viewParty, viewSheet, inviteLink, snoozeNudge } from './views-member.js';
-import { viewSchedule, viewCompose, viewLibrary, viewCrew, blankDraft, draftFromQuest, draftFromTemplate, readDraft, questRowFromDraft, validateDraft, renderPreview } from './views-gm.js';
+import { viewSchedule, viewCompose, viewLibrary, viewCrew, blankDraft, draftFromQuest, draftFromTemplate, readDraft, questRowFromDraft, validateDraft, renderPreview, recHtml } from './views-gm.js';
 import { viewReports, reportCsv } from './reports.js';
 
 const MEMBER = ['quests', 'party', 'sheet'];
@@ -89,6 +89,8 @@ async function loadGm(r) {
 let lastRoute = null;
 async function go() {
   let r = route();
+  if (r !== 'gm-new' && recorder) recStop();
+  stopNote(); S.speaking = null;
   if (r.startsWith('gm-') && !isStaff()) { location.hash = 'quests'; return; }
   if (!S.me) { paint(); return; }
   if (!S.loaded[r]) { header(r); $('app').className = r.startsWith('gm-') ? 'wide' : ''; $('app').innerHTML = `<p class="note" style="margin-top:24px">${esc(t('loading'))}</p>`; }
@@ -135,14 +137,71 @@ async function complete(id, fn) {
     paint(); showRoll(res);
   } catch (e) { toast(e.message); } finally { S.busy = false; }
 }
-function speak(id, text) {
-  if (!('speechSynthesis' in window)) { toast(t('readIt')); return; }
-  speechSynthesis.cancel();
-  if (S.speaking === id) { S.speaking = null; paint(); return; }
-  const u = new SpeechSynthesisUtterance(text); u.lang = getLang() === 'es' ? 'es-US' : 'en-US';
+// ---------- voice notes ----------
+let player = null;
+function stopNote() {
+  if (player) { player.onended = player.onerror = null; player.pause(); player = null; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+function speakText(id, text, lang) {
+  if (!text || !('speechSynthesis' in window)) { toast(t('readIt')); S.speaking = null; paint(); return; }
+  const u = new SpeechSynthesisUtterance(text); u.lang = lang || (getLang() === 'es' ? 'es-US' : 'en-US');
   u.onend = u.onerror = () => { if (S.speaking === id) { S.speaking = null; paint(); } };
   S.speaking = id; paint(); speechSynthesis.speak(u);
 }
+// Plays the organizer's recording. Members reading in another language hear
+// the translated transcript instead, when the quest has one.
+function playNote(q) {
+  const was = S.speaking === q.id;
+  stopNote(); S.speaking = null;
+  if (was) { paint(); return; }
+  const lang = getLang();
+  const translated = lang !== 'en' && q.tr && q.tr[lang] && q.tr[lang].note;
+  if (q.note_audio && !translated) {
+    player = new Audio(q.note_audio);
+    S.speaking = q.id;
+    player.onended = () => { player = null; if (S.speaking === q.id) { S.speaking = null; paint(); } };
+    player.onerror = () => { player = null; if (qtx(q, 'note')) speakText(q.id, qtx(q, 'note')); else { S.speaking = null; paint(); toast('This recording won’t play on this device.'); } };
+    player.play().catch(() => { if (player && player.onerror) player.onerror(); });
+    paint(); return;
+  }
+  speakText(q.id, qtx(q, 'note'));
+}
+let recorder = null, recTimer = null;
+function pickAudioType() {
+  if (!window.MediaRecorder) return '';
+  return ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find(x => MediaRecorder.isTypeSupported(x)) || '';
+}
+function drawRec() { const el = $('rec'); if (el) el.innerHTML = recHtml(S); }
+function setVoice(blob) {
+  if (S.gm.rec && S.gm.rec.url) URL.revokeObjectURL(S.gm.rec.url);
+  S.gm.rec = { status: 'ready', blob, url: URL.createObjectURL(blob) };
+  drawRec(); renderPreview(S);
+}
+async function recStart() {
+  stopNote();
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { toast('Couldn’t use the microphone. Allow it in the browser’s address bar, or upload a file instead.', 6000); return; }
+  const type = pickAudioType(), chunks = [];
+  recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 64000 } : undefined);
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    stream.getTracks().forEach(tr => tr.stop());
+    const blob = new Blob(chunks, { type: (recorder.mimeType || type || 'audio/webm') });
+    recorder = null;
+    if (blob.size) setVoice(blob); else { S.gm.rec = null; drawRec(); }
+  };
+  recorder.start();
+  const started = Date.now();
+  S.gm.rec = { status: 'recording' }; drawRec();
+  recTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - started) / 1000), el = $('rec-time');
+    if (el) el.textContent = `0:${String(Math.min(s, 30)).padStart(2, '0')}`;
+    if (s >= 30) recStop();
+  }, 250);
+}
+function recStop() { clearInterval(recTimer); if (recorder && recorder.state !== 'inactive') recorder.stop(); }
 async function gmUpdate(id, patch, msg) {
   try { await S.api.updateQuest(id, patch); await loadGm(route()); paint(); if (msg) toast(msg); } catch (e) { toast(e.message); }
 }
@@ -155,18 +214,20 @@ async function saveQuest(firing) {
   if (firing) { const now = Date.now(); Object.assign(row, { starts_at: new Date(now).toISOString(), ends_at: new Date(now + (parseInt(d.length, 10) || 60) * 6e4).toISOString(), stale_at: new Date(now + 36e5).toISOString(), confirmed: true }); }
   if (S.gm.editing) row.replaces = S.gm.editing;
   try {
+    if (S.gm.rec && S.gm.rec.status === 'recording') { toast('Stop the recording first.'); return; }
+    row.note_audio = (S.gm.rec && S.gm.rec.blob) ? await S.api.uploadVoice(S.gm.rec.blob) : ((S.gm.draft && S.gm.draft.note_audio) || null);
     const saved = await S.api.saveQuest(row);
     if (S.gm.editing) await S.api.updateQuest(S.gm.editing, { shelved: true });
     if (d.to_library && d.shelf === 'evergreen') {
-      const tp = await S.api.saveTemplate({ title: row.title, flavor: row.flavor, kind: row.kind, platform: row.platform, steps: row.steps, caption: row.caption, note: row.note, link: row.link, source: row.source });
+      const tp = await S.api.saveTemplate({ title: row.title, flavor: row.flavor, kind: row.kind, platform: row.platform, steps: row.steps, caption: row.caption, note: row.note, note_audio: row.note_audio, link: row.link, source: row.source });
       await S.api.updateQuest(saved.id, { template_id: tp.id });
     }
-    S.gm.draft = null; S.gm.editing = null;
+    S.gm.draft = null; S.gm.editing = null; S.gm.rec = null;
     toast(row.claim ? 'Saved. It waits for a second organizer’s sign-off.' : firing ? 'Fired. It’s live and will post to Discord within a minute.' : 'Added to the schedule.');
     location.hash = 'gm-schedule';
   } catch (e) { $('f-err').textContent = e.message; }
 }
-function startDraft(d, editing = null) { S.gm.draft = d; S.gm.editing = editing; if (location.hash !== '#gm-new') location.hash = 'gm-new'; else paint(); }
+function startDraft(d, editing = null) { S.gm.rec = null; S.gm.draft = d; S.gm.editing = editing; if (location.hash !== '#gm-new') location.hash = 'gm-new'; else paint(); }
 
 document.addEventListener('click', async e => {
   if (e.target.id === 'roll') { hideRoll(); return; }
@@ -191,7 +252,10 @@ document.addEventListener('click', async e => {
     case 'copylink': copyText(inviteLink(S), t('linkCopied')); break;
     case 'later': snoozeNudge(); paint(); break;
     case 'copy': if (q) copyText(qtx(q, 'caption'), t('copied')); break;
-    case 'voice': if (q) speak(id, qtx(q, 'note')); break;
+    case 'voice': if (q) playNote(q); break;
+    case 'recstart': recStart(); break;
+    case 'recstop': recStop(); break;
+    case 'recremove': if (S.gm.rec && S.gm.rec.url) URL.revokeObjectURL(S.gm.rec.url); S.gm.rec = null; if (S.gm.draft) S.gm.draft.note_audio = null; drawRec(); renderPreview(S); break;
     case 'unpair': try { await S.api.unlinkBuddy(); await go(); } catch (err) { toast(err.message); } break;
     case 'signout': {
       const acct = S.account || {};
@@ -199,7 +263,7 @@ document.addEventListener('click', async e => {
       await S.api.signOut(); location.hash = ''; location.reload(); break;
     }
     // organizers
-    case 'newquest': S.gm.draft = null; S.gm.editing = null; break;
+    case 'newquest': S.gm.draft = null; S.gm.editing = null; S.gm.rec = null; break;
     case 'confirm': gmUpdate(id, { confirmed: true }, 'Confirmed. It goes out as planned.'); break;
     case 'signoff': gmUpdate(id, { signed_by: S.me.id }, 'Signed off.'); break;
     case 'shelve': gmUpdate(id, { shelved: true }, 'Shelved. It stays in the archive.'); break;
@@ -208,7 +272,13 @@ document.addEventListener('click', async e => {
     case 'edit': if (q) startDraft(draftFromQuest(S, q), q.id); break;
     case 'canceledit': S.gm.draft = null; S.gm.editing = null; location.hash = 'gm-schedule'; break;
     case 'firenow': saveQuest(true); break;
-    case 'previewvoice': { const n = new FormData($('compose')).get('note'); if (!n) { toast('Write the note first.'); break; } if ('speechSynthesis' in window) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(String(n))); } break; }
+    case 'previewvoice': {
+      const src = (S.gm.rec && S.gm.rec.url) || (S.gm.draft && S.gm.draft.note_audio);
+      const n = String(new FormData($('compose')).get('note') || '');
+      playNote({ id: 'preview', note: n, note_audio: src || null, tr: {} });
+      if (!src && !n) toast('Record a note or write a transcript first.');
+      break;
+    }
     case 'copymirror': { const d = S.gm.draft || {}; copyText(`New quest: ${d.title || 'Untitled'}${d.flavor ? '\n' + d.flavor : ''}\n${location.origin + location.pathname}`, 'Copied.'); break; }
     case 'usetemplate': { const tp = S.gm.templates.find(x => x.id === el.dataset.t); if (tp) { const d = draftFromTemplate(S, tp); if (el.dataset.rewrite) { d.to_library = true; d.template_id = null; } startDraft(d); } break; }
     case 'runagain': {
@@ -237,6 +307,11 @@ document.addEventListener('change', async e => {
     const patch = { handle: S.me.handle, lang: el.id === 'set-lang' ? el.value : S.me.lang, max_per_week: S.me.max_per_week, quiet_hours: el.id === 'set-quiet' ? el.checked : S.me.quiet_hours };
     try { S.me = await S.api.updateMe(patch); setLang(S.me.lang); paint(); toast(t('saved')); } catch (err) { toast(err.message); }
     return;
+  }
+  if (el.id === 'voice-file' && el.files && el.files[0]) {
+    const f = el.files[0];
+    if (f.size > 3 * 1024 * 1024) { toast('That file is over 3 MB. Keep voice notes to about 30 seconds.'); el.value = ''; return; }
+    setVoice(f); el.value = ''; return;
   }
   if (el.closest && el.closest('#compose')) renderPreview(S);
 });
