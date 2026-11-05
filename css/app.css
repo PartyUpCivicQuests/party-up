@@ -363,3 +363,8 @@ details.fix summary{cursor:pointer;font-size:.9rem;color:var(--ink-2);text-decor
 select[name="role"]{display:block;width:100%;margin-top:8px;padding:10px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);min-height:46px}
 
 [hidden]{display:none !important}
+
+/* "Save your character" nudge */
+fieldset.box.nudge{border-color:var(--gold);border-width:3px;background:var(--gold-soft)}
+fieldset.box.nudge>legend{background:var(--gold);color:var(--gold-ink);border:2px solid var(--line);border-radius:999px;padding:2px 12px}
+fieldset.box.nudge .f input{background:var(--card)}
