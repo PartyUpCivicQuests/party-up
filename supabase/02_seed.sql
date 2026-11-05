@@ -31,17 +31,21 @@ select 'DISCORD1', g.id, 200, 'First Discord testers' from public.guilds g where
 on conflict (code) do nothing;
 
 -- Evergreen library. Autopilot pulls from here, least recently used first.
-insert into public.templates (title, flavor, kind, platform, steps, sort)
-select * from (values
-  ('Invite one person who doesn’t follow politics', 'Not your most political friend. Your most fun one.', 'recruit', 'chat', array['invite'], 10),
-  ('Follow train: follow five people in your guild', 'More of us following each other means more of us seen.', 'amplify', 'instagram', array['open'], 20),
-  ('Boost the week’s three picks', 'Watch, like, save, share. Three posts, ten minutes.', 'amplify', 'facebook', array['open','watch','like','save','share'], 30),
-  ('Share this week’s explainer in a group chat', 'Pick a chat that isn’t already on our side.', 'bubble', 'chat', array['sendchat'], 40),
-  ('Banner or profile frame for a day', 'Show your face. It changes who feels safe to agree.', 'bubble', 'profile', array['open'], 50),
-  ('Flyer or QR drop', 'Library, laundromat, coffee shop. Ask first.', 'street', 'street', array['open'], 60),
-  ('Scout report: what’s spreading near you?', 'Tell your captain what your feeds are full of. Don’t engage it.', 'scout', 'chat', array['comment'], 70)
-) as t(title, flavor, kind, platform, steps, sort)
-where not exists (select 1 from public.templates);
+-- Wrapped in a do-block so the SQL editor runs it as one unit.
+do $seed$
+begin
+  if not exists (select 1 from public.templates) then
+    insert into public.templates (title, flavor, kind, platform, steps, sort) values
+      ('Invite a friend who usually tunes out the news', 'Not your most political friend. Your most fun one.', 'recruit', 'chat', array['invite'], 10),
+      ('Follow train: follow five people in your guild', 'More of us following each other means more of us seen.', 'amplify', 'instagram', array['open'], 20),
+      ('Boost the week’s three picks', 'Watch, like, save, share. Three posts, ten minutes.', 'amplify', 'facebook', array['open','watch','like','save','share'], 30),
+      ('Share this week’s explainer in a group chat', 'Pick a chat that isn’t already on our side.', 'bubble', 'chat', array['sendchat'], 40),
+      ('Banner or profile frame for a day', 'Show your face. It changes who feels safe to agree.', 'bubble', 'profile', array['open'], 50),
+      ('Flyer or QR drop', 'Library, laundromat, coffee shop. Ask first.', 'street', 'street', array['open'], 60),
+      ('Scout report: what’s spreading near you?', 'Tell your captain what your feeds are full of. Don’t engage it.', 'scout', 'chat', array['comment'], 70);
+  end if;
+end
+$seed$;
 
 -- ---------------------------------------------------------------------
 -- AFTER you join the app with the FOUNDER code, make yourself the
