@@ -19,7 +19,7 @@ const GUILDS = [
   { id: 'g-ir', name: 'Iron Range', parent_id: 'g-mn' }
 ];
 const TEMPLATES = [
-  { id: 't1', title: 'Invite one person who isn’t into politics', flavor: 'Not your most political friend. Your most fun one.', kind: 'recruit', platform: 'chat', steps: ['invite'], sort: 10, active: true },
+  { id: 't1', title: 'Invite a friend who usually tunes out the news', flavor: 'Not your most political friend. Your most fun one.', kind: 'recruit', platform: 'chat', steps: ['invite'], sort: 10, active: true },
   { id: 't2', title: 'Follow train: follow five people in your guild', flavor: 'More of us following each other means more of us seen.', kind: 'amplify', platform: 'instagram', steps: ['open'], sort: 20, active: true },
   { id: 't3', title: 'Boost the week’s three picks', flavor: 'Watch, like, save, share. Three posts, ten minutes.', kind: 'amplify', platform: 'facebook', steps: ['open', 'watch', 'like', 'save', 'share'], sort: 30, active: true },
   { id: 't4', title: 'Share this week’s explainer in a group chat', flavor: 'Pick a chat that isn’t already on our side.', kind: 'bubble', platform: 'chat', steps: ['sendchat'], sort: 40, active: true },
@@ -135,7 +135,7 @@ function seed() {
       class_xp: { paladin: 920, bard: 740, cleric: 380, druid: 220, wizard: 160, monk: 120, rogue: 40, ranger: 30 },
       vow_week: null, buddy_code: 'K7X2QP', recruits: 3, invite_code: 'ARI7Q3', created_at: iso(addDays(w0, -60)) },
     buddy: { handle: 'Maya', week_done: 2, streak: 4 },
-    account: { email: '', anonymous: true },
+    account: { email: '', pending: '', anonymous: true },
     quests: hist.quests.concat(cur), stats, weeks, done: [],
     templates: TEMPLATES.slice(),
     guilds: GUILDS.slice(),
@@ -223,7 +223,7 @@ export function createApi() {
     linkBuddy(code) { if (!code) return fail('No one has that buddy code.'); db.buddy = { handle: 'Sam K.', week_done: 1, streak: 2 }; save(); return wait('Sam K.'); },
     unlinkBuddy() { db.buddy = null; save(); return wait(null); },
     account: () => wait(db.account),
-    linkEmail(email) { db.account = { email, anonymous: false }; save(); return wait(null); },
+    linkEmail(email) { db.account = { email: '', pending: email, anonymous: true }; save(); return wait(null); },
     signInEmail: () => wait(null),
     signOut() { localStorage.removeItem(KEY); return wait(null); },
 

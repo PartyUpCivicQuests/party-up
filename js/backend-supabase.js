@@ -54,7 +54,7 @@ export function createApi(cfg) {
     async account() {
       const { data } = await sb.auth.getUser();
       const u = data && data.user;
-      return { email: u && u.email ? u.email : '', anonymous: !!(u && u.is_anonymous) };
+      return { email: u && u.email ? u.email : '', pending: u && u.new_email ? u.new_email : '', anonymous: !!(u && u.is_anonymous) };
     },
     async linkEmail(email) {
       const { error } = await sb.auth.updateUser({ email }, { emailRedirectTo: here() });

@@ -3,7 +3,7 @@ import { getApi } from './api.js';
 import { esc, icon, D20, fmtLeft, safeUrl, downloadText, ymd } from './util.js';
 import { CLASSES } from './content.js';
 import { t, tx, qtx, setLang, getLang } from './i18n.js';
-import { viewJoin, viewQuests, viewParty, viewSheet, inviteLink } from './views-member.js';
+import { viewJoin, viewQuests, viewParty, viewSheet, inviteLink, snoozeNudge } from './views-member.js';
 import { viewSchedule, viewCompose, viewLibrary, viewCrew, blankDraft, draftFromQuest, draftFromTemplate, readDraft, questRowFromDraft, validateDraft, renderPreview } from './views-gm.js';
 import { viewReports, reportCsv } from './reports.js';
 
@@ -71,7 +71,7 @@ async function loadMember(r) {
   S.done = fresh;
   if (me && me.lang && me.lang !== getLang()) setLang(me.lang);
   if (r === 'party') [S.board, S.turnout, S.buddy] = await Promise.all([S.api.board(), S.api.turnout(), S.api.buddy()]);
-  if (r === 'sheet') S.account = await S.api.account();
+  if (r === 'sheet' || r === 'quests') S.account = await S.api.account();
 }
 async function loadReport() {
   const [rows, weeks] = await Promise.all([S.api.reportQuests(S.gm.range), S.api.reportWeeks(Math.ceil(S.gm.range / 7))]);
@@ -189,6 +189,7 @@ document.addEventListener('click', async e => {
       if (await share({ title: 'Party Up', text: t('inviteText'), url: link }, `${t('inviteText')} ${link}`) && q && i != null) { tick(id, i); paint(); }
     } break;
     case 'copylink': copyText(inviteLink(S), t('linkCopied')); break;
+    case 'later': snoozeNudge(); paint(); break;
     case 'copy': if (q) copyText(qtx(q, 'caption'), t('copied')); break;
     case 'voice': if (q) speak(id, qtx(q, 'note')); break;
     case 'unpair': try { await S.api.unlinkBuddy(); await go(); } catch (err) { toast(err.message); } break;
@@ -263,6 +264,7 @@ document.addEventListener('submit', async e => {
     if (f.id === 'signin-form') { await S.api.signInEmail(v('email')); toast(t('emailSent'), 5000); }
     if (f.id === 'pair-form') { const who = await S.api.linkBuddy(v('code')); toast(t('paired', who)); go(); }
     if (f.id === 'me-form') { S.me = await S.api.updateMe({ handle: v('handle'), lang: S.me.lang, max_per_week: S.me.max_per_week, quiet_hours: S.me.quiet_hours }); paint(); toast(t('saved')); }
+    if (f.id === 'nudge-form') { if (!v('email')) return; await S.api.linkEmail(v('email')); S.account = await S.api.account(); paint(); toast(t('emailSent'), 5000); }
     if (f.id === 'email-form') { await S.api.linkEmail(v('email')); S.account = await S.api.account(); toast(t('emailSent'), 5000); paint(); }
     if (f.id === 'compose') saveQuest(false);
     if (f.classList.contains('corr-form')) { await S.api.updateQuest(f.dataset.q, { correction: v('correction') }); S.gm.archive = await S.api.archive(); paint(); toast('Correction added. Members see it on the quest.'); }

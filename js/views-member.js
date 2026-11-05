@@ -57,12 +57,30 @@ function upRow(q) {
     <span class="chip xp">+${q.xp} XP</span></div>`;
 }
 
+const SNOOZE = 'partyup-save-snooze';
+export function snoozeNudge() { try { localStorage.setItem(SNOOZE, String(Date.now() + 7 * 864e5)); } catch { /* ignore */ } }
+function nudgeSnoozed() { try { return Number(localStorage.getItem(SNOOZE) || 0) > Date.now(); } catch { return false; } }
+
+// "Save your character": shown until the member adds an email. "Maybe later" hides it for a week.
+function saveNudge(S) {
+  const a = S.account;
+  if (!a || a.email) return '';
+  if (a.pending) return `<fieldset class="box nudge"><legend>${esc(t('saveTitle'))}</legend><p style="margin:0">${esc(t('pendingNote', a.pending))}</p></fieldset>`;
+  if (nudgeSnoozed()) return '';
+  return `<form id="nudge-form" novalidate><fieldset class="box nudge"><legend>${esc(t('saveTitle'))}</legend>
+    <p class="note">${esc(t('saveNote'))}</p>
+    <label class="f"><span class="sr">${esc(t('email'))}</span><input name="email" type="email" autocomplete="email" placeholder="${esc(t('email'))}" required></label>
+    <p class="err" id="nudge-err" role="alert"></p>
+    <div class="btn-row" style="margin-top:8px"><button type="submit" class="btn primary" style="width:auto;flex:1">${esc(t('saveBtn'))}</button><button type="button" class="btn ghost" data-act="later">${esc(t('later'))}</button></div>
+  </fieldset></form>`;
+}
+
 export function viewQuests(S) {
   const now = Date.now(), me = S.me, qs = S.quests;
   const live = qs.filter(q => q.shelf !== 'evergreen' && ts(q.starts_at) <= now && ts(q.ends_at) > now).sort((a, b) => ts(a.ends_at) - ts(b.ends_at));
   const upcoming = qs.filter(q => q.shelf !== 'evergreen' && ts(q.starts_at) > now).sort((a, b) => ts(a.starts_at) - ts(b.starts_at)).slice(0, 3);
   const anytime = qs.filter(q => q.shelf === 'evergreen');
-  let h = statStrip(me);
+  let h = saveNudge(S) + statStrip(me);
   if (live.length) {
     const q = live[0];
     h += `<fieldset class="box hero"><legend><span class="pill">${esc(t('waveNow'))} <span class="clock" data-ends="${ts(q.ends_at)}" aria-label="${esc(t('endsIn'))}">${fmtLeft(ts(q.ends_at) - now)}</span></span></legend>${questBody(q, ctx(S), { title: true })}</fieldset>
@@ -134,7 +152,7 @@ export function viewSheet(S) {
     <p class="privacy">${esc(t('privacy'))}</p>
   </fieldset>
   <form id="email-form" novalidate><fieldset class="box"><legend>${esc(t('devices'))}</legend>
-    ${acct.email ? `<p style="margin:0 0 8px">${esc(t('signedInAs', acct.email))}</p>` : `<p class="note">${esc(t('devicesNote'))}</p>
+    ${acct.email ? `<p style="margin:0 0 8px">${esc(t('signedInAs', acct.email))}</p>` : acct.pending ? `<p style="margin:0 0 8px">${esc(t('pendingNote', acct.pending))}</p>` : `<p class="note">${esc(t('devicesNote'))}</p>
     <label class="f">${esc(t('email'))}<input name="email" type="email" autocomplete="email"></label>
     <p class="err" id="email-err" role="alert"></p><button type="submit" class="btn ghost sm">${esc(t('addEmail'))}</button>`}
     <div class="setting"><button type="button" class="btn ghost warn sm" data-act="signout">${esc(t('signOut'))}</button></div>
