@@ -62,6 +62,7 @@ WhatsApp Channels have no posting connection, so use the **Copy text** button in
 ## 6. Invite your first testers
 
 - Share `https://YOUR-GITHUB-NAME.github.io/party-up/?invite=DISCORD1` in your Discord. That code puts people in the Minnesota guild and works 200 times. Make more codes under **Crew**.
+- New members see a **Save your character** box at the top of their quests until they add an email. Without one, their character lives only in the browser where they joined, so a private window or a new phone means starting over. Encourage everyone to add it.
 - On iPhone, tell people to tap **Share > Add to Home Screen** so it opens like an app.
 - Every member gets a personal invite link on their **Party** tab. Recruits give the inviter Cleric XP.
 
