@@ -1,8 +1,8 @@
-# Party Up
+# Party Up: Civic Quests
 
 Civic quests that take a few minutes. Organizers post a quest ("watch this video to the end, like it, share it to your story"), members do it by hand on their own accounts, tap **I did it**, and roll a d20 for XP. Weekly streaks, buddy goals, guild turnout, and a reports dashboard keep it going for years at a sustainable pace.
 
-Party Up is built on the principles in the *Mini-Manual of Informational Insurgency*, adapted for the US and for the long haul. The ground rules are in [docs/PRINCIPLES.md](docs/PRINCIPLES.md). The short version: **real people, real accounts, by hand.** Party Up never posts, likes, or clicks for anyone.
+Party Up is built on the principles in the *Mini-Manual of Informational Insurgency*, adapted for the US and for the long haul. The ground rules are in [docs/PRINCIPLES.md](docs/PRINCIPLES.md). The summary is **real people, real accounts, by hand.** Party Up never posts, likes, or clicks for you. By acting collectively, we can exert guidance over the algorithms that usually guide us instead.
 
 ## Try it in two minutes
 
